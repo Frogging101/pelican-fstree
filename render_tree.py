@@ -47,12 +47,23 @@ def indent(node, style='light'):
     indent += _node + sep + space
     return indent
 
-def render_tree(node):
+def render_tree(node, descendants=-1, me=None):
+    if me is None:
+        me = node
     out = ""
     if node.parent:
         out += indent(node)
     out += node.name
     out += '<br>\n'
-    for child in node.children:
-        out += render_tree(child)
+    if descendants:
+        for child in node.children:
+            out += render_tree(child, descendants-1, me)
     return out
+
+def render_tree_ancestors(node, ancestors, descendants=-1):
+    me = node
+    while ancestors and node.parent is not None:
+        node = node.parent
+        ancestors -= 1
+
+    return render_tree(node, descendants, me)

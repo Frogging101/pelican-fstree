@@ -7,7 +7,7 @@ from pelican.utils import posixize_path
 from pelican.outputs import HTMLOutput
 
 from .fsnode import Node
-from .render_tree import render_tree
+from .render_tree import render_tree, render_tree_ancestors
 
 def split_path(path, components=None):
     if components is None:
@@ -36,6 +36,7 @@ def normalize_path(path):
 def init_node(parent, name, output):
     node = Node(parent, name, output)
     node.render_tree = partial(render_tree, node)
+    node.render_tree_ancestors = partial(render_tree_ancestors, node)
     output.template_vars['node'] = node
     if parent:
         parent.add_child(node)
