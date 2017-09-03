@@ -9,6 +9,8 @@ from pelican.outputs import HTMLOutput
 from .fsnode import Node
 from .render_tree import render_tree, render_tree_ancestors
 
+settings = None
+
 def split_path(path, components=None):
     if components is None:
         components = []
@@ -35,8 +37,8 @@ def normalize_path(path):
 
 def init_node(parent, name, output):
     node = Node(parent, name, output)
-    node.render_tree = partial(render_tree, node)
-    node.render_tree_ancestors = partial(render_tree_ancestors, node)
+    node.render_tree = partial(render_tree, node, settings)
+    node.render_tree_ancestors = partial(render_tree_ancestors, node, settings)
     output.template_vars['node'] = node
     if parent:
         parent.add_child(node)
@@ -82,5 +84,10 @@ def add_nodes(generators, outputs):
         node = init_node(parent, components[-1], output)
         nodes[depth].append((components, node))
 
+def init(pelican):
+    global settings
+    settings = pelican.settings
+
 def register():
+    signals.initialized.connect(init)
     signals.all_generators_finalized.connect(add_nodes)

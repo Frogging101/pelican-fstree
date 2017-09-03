@@ -1,4 +1,5 @@
 from operator import attrgetter
+import posixpath as osp
 
 class Node:
     def __init__(self, parent, name, output=None):
@@ -30,6 +31,18 @@ class Node:
             return (self,)
 
         return self.parent.children
+
+    @property
+    def path(self):
+        path = '/'
+        if not self.parent:
+            return path
+        for a in self.ancestors:
+            path = osp.join(path, a.name)
+        path = osp.join(path, self.name)
+        if len(self.children):
+            path = osp.join(path, '')
+        return path
 
     @property
     def ts(self):

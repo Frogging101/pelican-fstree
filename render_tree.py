@@ -47,23 +47,24 @@ def indent(node, style='light'):
     indent += _node + sep + space
     return indent
 
-def render_tree(node, descendants=-1, me=None):
+def render_tree(node, settings, descendants=-1, me=None):
     if me is None:
         me = node
     out = ""
     if node.parent:
         out += indent(node)
-    out += node.name
+    out += '<a href="{}{}">{}</a>'.format(settings.get('SITEURL', ''),
+                                          node.path, node.name)
     out += '<br>\n'
     if descendants:
         for child in node.children:
-            out += render_tree(child, descendants-1, me)
+            out += render_tree(child, settings, descendants-1, me)
     return out
 
-def render_tree_ancestors(node, ancestors, descendants=-1):
+def render_tree_ancestors(node, settings, ancestors, descendants=-1):
     me = node
     while ancestors and node.parent is not None:
         node = node.parent
         ancestors -= 1
 
-    return render_tree(node, descendants, me)
+    return render_tree(node, settings, descendants, me)
