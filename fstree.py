@@ -33,6 +33,14 @@ def normalize_path(path):
 
     return path
 
+def init_node(parent, name, output):
+    node = Node(parent, name, output)
+    node.render_tree = partial(render_tree, node)
+    output.template_vars['node'] = node
+    if parent:
+        parent.add_child(node)
+    return node
+
 def add_nodes(generators, outputs):
     PO = namedtuple('PO', ['path', 'output'])
     paths_outputs = [PO(normalize_path(o.path), o) for o in outputs if
@@ -48,13 +56,10 @@ def add_nodes(generators, outputs):
     splitpaths = [PO(split_path(po.path), po.output) for po in paths_outputs]
     splitpaths.sort(key=lambda item: len(item.path))
     
-    root = Node(None, splitpaths[0].path[-1])
-    splitpaths[0].output.template_vars['node'] = root
-    root.output = splitpaths[0].output
-    root.render_tree = partial(render_tree, root)
-    
+    root = init_node(None, splitpaths[0].path[-1], splitpaths[0].output)
     nodes = [[(splitpaths[0].path, root)]]
     splitpaths.pop(0)
+
     for po in splitpaths:
         components = po.path
         output = po.output
@@ -73,11 +78,7 @@ def add_nodes(generators, outputs):
         except AssertionError as e:
             e.args += (depth, components, nodes[depth-1])
             raise
-        node = Node(parent, components[-1])
-        parent.add_child(node)
-        output.template_vars['node'] = node
-        node.output = output
-        node.render_tree = partial(render_tree, node)
+        node = init_node(parent, components[-1], output)
         nodes[depth].append((components, node))
 
 def register():
