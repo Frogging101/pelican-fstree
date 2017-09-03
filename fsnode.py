@@ -1,3 +1,4 @@
+import copy
 from operator import attrgetter
 import posixpath as osp
 
@@ -10,6 +11,9 @@ class Node:
 
     def add_child(self, child):
         self._children.add(child)
+
+    def del_child(self, child):
+        self._children.remove(child)
 
     @property
     def children(self):
@@ -47,3 +51,23 @@ class Node:
     @property
     def ts(self):
         return "timestamp"
+
+    def get_node_at(self, path):
+        if self.path == path:
+            return self
+        for child in self.children:
+            ret = child.get_node_at(path)
+            if ret is not None:
+                return ret
+
+        return None
+
+    def __deepcopy__(self, memo):
+        new = copy.copy(self)
+        new._children = new._children.copy()
+        for child in new._children:
+            newchild = copy.deepcopy(child)
+            newchild.parent = new
+            new._children.remove(child)
+            new._children.add(newchild)
+        return new
