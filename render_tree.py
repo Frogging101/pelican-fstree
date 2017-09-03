@@ -1,3 +1,7 @@
+from copy import deepcopy
+from fnmatch import fnmatch
+import os.path as osp
+
 from . import unicode_box_drawing as bd
 from .fsnode import Node
 
@@ -47,9 +51,23 @@ def indent(node, style='light'):
     indent += _node + sep + space
     return indent
 
-def render_tree(node, settings, descendants=-1, me=None):
-    if me is None:
-        me = node
+def prune_tree(node, matchpaths, ignorepaths):
+    ret = 1
+    for matchpath in matchpaths:
+        if fnmatch(node.path, matchpath):
+            ret = 0
+    for ignorepath in ignorepaths:
+        if fnmatch(node.path, ignorepath):
+            ret = 1
+    for child in node.children:
+        if prune_tree(child, matchpaths, ignorepaths):
+            node.del_child(child)
+        else:
+            ret = 0
+    return ret
+
+
+def _render_tree(node, settings, descendants, me):
     out = ""
     if node.parent:
         out += indent(node)
@@ -58,8 +76,18 @@ def render_tree(node, settings, descendants=-1, me=None):
     out += '<br>\n'
     if descendants:
         for child in node.children:
-            out += render_tree(child, settings, descendants-1, me)
+            out += _render_tree(child, settings, descendants-1, me)
     return out
+
+def render_tree(node, settings, descendants=-1, me=None, matchpaths=("*",),
+                ignorepaths=("",)):
+    node = deepcopy(node)
+    prune_tree(node, matchpaths, ignorepaths)
+    if me is None:
+        me = node
+    else:
+        me = node.get_node_at(me.path)
+    return _render_tree(node, settings, descendants, me)
 
 def render_tree_ancestors(node, settings, ancestors, descendants=-1):
     me = node
@@ -67,4 +95,5 @@ def render_tree_ancestors(node, settings, ancestors, descendants=-1):
         node = node.parent
         ancestors -= 1
 
-    return render_tree(node, settings, descendants, me)
+    return render_tree(node, settings, descendants, me,
+                       (me.path, osp.join(me.path, '*')))
