@@ -3,6 +3,7 @@ import posixpath as osp
 from functools import partial
 
 from pelican import signals
+from pelican import contents
 from pelican.utils import posixize_path
 from pelican.outputs import HTMLOutput
 
@@ -84,6 +85,32 @@ def add_nodes(generators, outputs):
         node = init_node(parent, components[-1], output)
         nodes[depth].append((components, node))
 
+"""Store source directory (with trailing slash) in
+content.metadata['dir'].
+
+Some leading components (such as those in PAGE_PATHS for pages) are
+removed.
+"""
+def add_dir(content):
+    global settings
+    if content.source_path is None:
+        return
+
+    dirname = content.relative_dir
+    if type(content) == contents.Page:
+        dirname = dirname.replace(osp.commonprefix(
+                settings['PAGE_PATHS'] + [dirname,]),
+            '')
+
+    if dirname:
+        # Remove leading slash
+        if osp.isabs(dirname):
+            dirname = osp.relpath(dirname, '/')
+        # Add trailing slash
+        dirname += '/'
+
+    content.metadata['dir'] = dirname
+
 def init(pelican):
     global settings
     settings = pelican.settings
@@ -91,3 +118,4 @@ def init(pelican):
 def register():
     signals.initialized.connect(init)
     signals.all_generators_finalized.connect(add_nodes)
+    signals.content_object_init.connect(add_dir)
