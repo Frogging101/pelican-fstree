@@ -36,6 +36,11 @@ def normalize_path(path):
 
     return path
 
+"""Initialize a Node with a parent (optional), name, and Output object.
+
+The new Node is added to the parent's list of children, and a reference
+to it is stored in the Output object's "node" template variable.
+"""
 def init_node(parent, name, output):
     node = Node(parent, name, output)
     node.render_tree = partial(render_tree, node, settings)
@@ -45,6 +50,11 @@ def init_node(parent, name, output):
         parent.add_child(node)
     return node
 
+"""Creates a Node for each Output object.
+
+Nodes will be stored in the corresponding Output object's "node"
+template variable by init_node().
+"""
 def add_nodes(generators, outputs):
     PO = namedtuple('PO', ['path', 'output'])
     paths_outputs = [PO(normalize_path(o.path), o) for o in outputs if
@@ -58,12 +68,16 @@ def add_nodes(generators, outputs):
         raise
 
     splitpaths = [PO(split_path(po.path), po.output) for po in paths_outputs]
+    # Sort paths in ascending order of number of components
     splitpaths.sort(key=lambda item: len(item.path))
-    
+
+    # Create root node for Output with first (shortest) path
     root = init_node(None, splitpaths[0].path[-1], splitpaths[0].output)
-    nodes = [[(splitpaths[0].path, root)]]
+    nodes = [[(splitpaths[0].path, root)]] # Indexed by depth, nodes[0]
+                                           # contains only root.
     splitpaths.pop(0)
 
+    # Create the rest of the nodes
     for po in splitpaths:
         components = po.path
         output = po.output
