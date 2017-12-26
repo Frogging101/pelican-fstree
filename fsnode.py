@@ -63,11 +63,16 @@ class Node:
         return None
 
     def __deepcopy__(self, memo):
+        if id(self) in memo:
+            return memo[id(self)]
         new = copy.copy(self)
-        new._children = new._children.copy()
+        memo[id(self)] = new
+        if new.parent is not None:
+            new.parent = copy.deepcopy(new.parent, memo)
+        newchildren = set()
         for child in new._children:
-            newchild = copy.deepcopy(child)
-            newchild.parent = new
-            new._children.remove(child)
-            new._children.add(newchild)
+            newchild = copy.deepcopy(child, memo)
+            newchildren.add(newchild)
+        new._children = newchildren
+
         return new
