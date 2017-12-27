@@ -25,9 +25,14 @@ SPACER = u'\u00a0'
 |||----- Separator (2 chars)
 |--------- Node (1 char)
 """
-def indent(node, style='light'):
+def indent(node, root=None, style='light'):
     indent = ""
     ancestors = node.ancestors
+    if root:
+        if node is root:
+            return ''
+        else:
+            ancestors = ancestors[ancestors.index(root):]
     for i,a in enumerate(ancestors):
         if i == 0:
             continue
@@ -67,16 +72,16 @@ def prune_tree(node, matchpaths, ignorepaths):
     return ret
 
 
-def _render_tree(node, settings, descendants, me):
+def _render_tree(node, settings, descendants, me, root):
     out = ""
-    if node.parent:
-        out += indent(node)
+    if node is not root:
+        out += indent(node, root)
     out += '<a href="{}{}">{}</a>'.format(settings.get('SITEURL', ''),
                                           node.path, node.name)
     out += '<br>\n'
     if descendants:
         for child in node.children:
-            out += _render_tree(child, settings, descendants-1, me)
+            out += _render_tree(child, settings, descendants-1, me, root)
     return out
 
 def render_tree(node, settings, descendants=-1, me=None, matchpaths=("*",),
@@ -87,7 +92,7 @@ def render_tree(node, settings, descendants=-1, me=None, matchpaths=("*",),
         me = node
     else:
         me = node.get_node_at(me.path)
-    return _render_tree(node, settings, descendants, me)
+    return _render_tree(node, settings, descendants, me, node)
 
 def render_tree_ancestors(node, settings, ancestors, descendants=-1):
     me = node
