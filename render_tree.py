@@ -56,19 +56,46 @@ def indent(node, root=None, style='light'):
     indent += _node + sep + space
     return indent
 
+"""Prunes the tree given lists of paths to keep and paths to prune.
+
+The items in the given lists of paths are treated as shell-style globs
+via fnmatch.
+
+Paths matching an expression in matchpaths will be kept to the exclusion
+of others. If matchpaths is empty or none, then all paths will be
+matched.
+
+Paths matching an expression in ignorepaths will be unconditionally
+pruned.
+
+Recursive function, returns True if the given node should be deleted.
+"""
 def prune_tree(node, matchpaths, ignorepaths):
-    ret = 1
-    for matchpath in matchpaths:
-        if fnmatch(node.path, matchpath):
-            ret = 0
-    for ignorepath in ignorepaths:
-        if fnmatch(node.path, ignorepath):
-            ret = 1
+    ret = True # Prune by default
+
+    if not matchpaths and not ignorepaths:
+        # Short circuit case where there are no paths to check against
+        return False
+
+    if matchpaths:
+        for matchpath in matchpaths:
+            if fnmatch(node.path, matchpath):
+                ret = False # Keep matched paths
+    else:
+        # Match all paths if matchpaths is empty/None
+        ret = False
+
+    if ignorepaths:
+        for ignorepath in ignorepaths:
+            if fnmatch(node.path, ignorepath):
+                ret = True # Prune ignored paths
+
     for child in node.children:
         if prune_tree(child, matchpaths, ignorepaths):
             node.del_child(child)
         else:
-            ret = 0
+            # Don't prune the current node if it has an unpruned child
+            ret = False
     return ret
 
 
@@ -84,8 +111,8 @@ def _render_tree(node, settings, descendants, me, root):
             out += _render_tree(child, settings, descendants-1, me, root)
     return out
 
-def render_tree(node, settings, descendants=-1, me=None, matchpaths=("*",),
-                ignorepaths=("",)):
+def render_tree(node, settings, descendants=-1, me=None, matchpaths=None,
+                ignorepaths=None):
     node = deepcopy(node)
     prune_tree(node, matchpaths, ignorepaths)
     if me is None:
