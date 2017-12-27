@@ -121,11 +121,15 @@ def render_tree(node, settings, descendants=-1, me=None, matchpaths=None,
         me = node.get_node_at(me.path)
     return _render_tree(node, settings, descendants, me, node)
 
-def render_tree_ancestors(node, settings, ancestors, descendants=-1):
+def render_tree_ancestors(node, settings, ancestors=-1, descendants=-1):
     me = node
     while ancestors and node.parent is not None:
         node = node.parent
         ancestors -= 1
+        if descendants >= 0:
+            # Increment descendants by one for each level we go up so
+            # that it stays relative to the given node
+            descendants += 1
 
     return render_tree(node, settings, descendants, me,
                        (me.path, osp.join(me.path, '*')))
