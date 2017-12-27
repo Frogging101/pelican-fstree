@@ -27,7 +27,8 @@ class Node:
             ancestors.append(next.parent)
             next = next.parent
 
-        return reversed(ancestors)
+        ancestors.reverse()
+        return ancestors
 
     @property
     def level(self):
