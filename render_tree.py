@@ -26,7 +26,7 @@ SPACER = u'\u00a0'
 |--------- Node (1 char)
 """
 def indent(node, root=None, style='light'):
-    indent = ""
+    indent = '<span class="fsnode-indent">'
     ancestors = node.ancestors
     if root:
         if node is root:
@@ -34,26 +34,33 @@ def indent(node, root=None, style='light'):
         else:
             ancestors = ancestors[ancestors.index(root):]
     for i,a in enumerate(ancestors):
+        class_ = "fsnode-node"
         if i == 0:
             continue
         if a.level.index(a) < len(a.level)-1:
             _node = bd.vert[style]
+            class_ += " fsnode-vert"
         else:
             _node = SPACER
 
         sep = SPACER * SEP
         space = SPACER * SPACE
 
-        indent += _node + sep + space
+        indent += '<span class="{}">'.format(class_) + _node + "</span>" +\
+                  sep + space
 
+    class_ = "fsnode-node"
     if node.level.index(node) < len(node.level)-1:
         _node = bd.vertright[style]
+        class_ += " fsnode-vert"
     else:
         _node = bd.upright[style]
 
     sep = bd.horz[style] * SEP
     space = SPACER * SPACE
-    indent += _node + sep + space
+    indent += '<span class="{}">'.format(class_) + _node + "</span>" +\
+              sep + space
+    indent += "</span>"
     return indent
 
 """Prunes the tree given lists of paths to keep and paths to prune.
@@ -100,12 +107,12 @@ def prune_tree(node, matchpaths, ignorepaths):
 
 
 def _render_tree(node, settings, descendants, me, root):
-    out = ""
+    out = '<div class="fsnode">'
     if node is not root:
         out += indent(node, root)
     out += '<a href="{}{}">{}</a>'.format(settings.get('SITEURL', ''),
                                           node.path, node.name)
-    out += '<br>\n'
+    out += '</div>\n'
     if descendants:
         for child in node.children:
             out += _render_tree(child, settings, descendants-1, me, root)
