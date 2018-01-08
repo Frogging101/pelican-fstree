@@ -3,28 +3,18 @@ from functools import partial
 
 from pelican import signals
 from pelican import contents
-from pelican.utils import posixize_path
 from pelican.outputs import HTMLOutput
 from pelican.writers import Writer
 
 from .fsnode import Node, NodePrecursor as NP
 from .render_tree import render_tree, render_tree_ancestors
 from .dirlist import DirListGenerator
-from .utils import split_path
+from .utils import normalize_path, split_path
 
 settings = None
 dlgen = None
 writer = None
 precursors = []
-
-def normalize_path(path):
-    path = posixize_path(osp.normpath(path))
-    if not osp.isabs(path):
-        path = osp.join('/', path)
-    if osp.basename(path) == "index.html":
-        path = osp.dirname(path)
-
-    return path
 
 """Initialize a Node with a parent (optional), name, and Output object.
 
