@@ -2,6 +2,8 @@ import copy
 from operator import attrgetter
 import posixpath as osp
 
+from .utils import split_path
+
 class Node:
     def __init__(self, parent, name, output=None):
         self.parent   = parent
@@ -77,3 +79,10 @@ class Node:
         new._children = newchildren
 
         return new
+
+class NodePrecursor:
+    def __init__(self, path, output=None):
+        self.path = path
+        self.output = output
+        self.components = split_path(path)
+        self.name = self.components[-1]

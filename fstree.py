@@ -1,4 +1,3 @@
-from collections import namedtuple
 import posixpath as osp
 from functools import partial
 
@@ -8,28 +7,14 @@ from pelican.utils import posixize_path
 from pelican.outputs import HTMLOutput
 from pelican.writers import Writer
 
-from .fsnode import Node
+from .fsnode import Node, NodePrecursor as NP
 from .render_tree import render_tree, render_tree_ancestors
 from .dirlist import DirListGenerator
+from .utils import split_path
 
 settings = None
 dlgen = None
 writer = None
-
-def split_path(path, components=None):
-    if components is None:
-        components = []
-    path = osp.normpath(path)
-    head, tail = osp.split(path)
-    if not head or not tail:
-        if head:
-            components.insert(0, head)
-        if tail:
-            components.insert(0, tail)
-        return components
-
-    components.insert(0, tail)
-    return split_path(head, components)
 
 def normalize_path(path):
     path = posixize_path(osp.normpath(path))
@@ -60,58 +45,55 @@ Nodes will be stored in the corresponding Output object's "node"
 template variable by init_node().
 """
 def add_nodes(generators, outputs):
-    PO = namedtuple('PO', ['path', 'output'])
-    paths_outputs = [PO(normalize_path(o.path), o) for o in outputs if
-                     type(o) is HTMLOutput]
+    precursors = [NP(normalize_path(o.path), o) for o in outputs if
+                  type(o) is HTMLOutput]
 
-    paths = [po.path for po in paths_outputs]
+    paths = [p.path for p in precursors]
     try:
         assert len(paths) == len(set(paths)), "we got dupes"
     except AssertionError as e:
         e.args += (paths,)
         raise
 
-    splitpaths = [PO(split_path(po.path), po.output) for po in paths_outputs]
-    # Sort paths in ascending order of number of components
-    splitpaths.sort(key=lambda item: len(item.path))
+    # Sort precursors in ascending order of number of path components
+    precursors.sort(key=lambda item: len(item.components))
 
-    # Create root node for Output with first (shortest) path
-    root = init_node(None, splitpaths[0].path[-1], splitpaths[0].output)
-    nodes = [[(splitpaths[0].path, root)]] # Indexed by depth, nodes[0]
-                                           # contains only ('/', root).
-    splitpaths.pop(0)
+    # Create root node for precursor with first (shortest) path
+    root = init_node(None, precursors[0].name, precursors[0].output)
+    nodes = [[(precursors[0].components, root)]] # Indexed by depth, nodes[0]
+                                                 # contains only ('/', root).
+    precursors.pop(0)
 
     new_outputs = []
     # Create the rest of the nodes
-    for po in splitpaths:
-        components = po.path
-        output = po.output
-        depth = len(components)-1
+    for precursor in precursors:
+        output = precursor.output
+        depth = len(precursor.components)-1
 
         if len(nodes) <= depth:
             nodes.append([])
 
         parent = None
         for p in nodes[depth-1]:
-            if p[0] == components[:-1]:
+            if p[0] == precursor.components[:-1]:
                 parent = p[1]
 
         if not parent:
             # Go up until we find an ancestor that exists
             for level in range(depth-1, -1, -1):
                 for p in nodes[level]:
-                    if p[0] == components[:level+1]:
+                    if p[0] == precursor.components[:level+1]:
                         # Found an ancestor. The nesting is getting a
                         # bit ridiculous, but bear with me. Now we're
                         # going to create a directory listing for each
                         # missing level.
                         _parent = p[1]
                         for missing in range(level+1, depth):
-                            _splitpath = components[:missing+1]
-                            _path = '/'.join(_splitpath[1:])
+                            _components = precursor.components[:missing+1]
+                            _path = '/'.join(_components[1:])
                             _output = dlgen.generate_directory_listing(_path)
-                            _node = init_node(_parent, _splitpath[-1], _output)
-                            nodes[missing].append((_splitpath, _node))
+                            _node = init_node(_parent, _components[-1], _output)
+                            nodes[missing].append((_components, _node))
                             new_outputs.append(_output)
                             _parent = _node
                         parent = _parent
@@ -122,10 +104,10 @@ def add_nodes(generators, outputs):
         try:
             assert parent
         except AssertionError as e:
-            e.args += (depth, components, nodes[depth-1])
+            e.args += (depth, precursor.components, nodes[depth-1])
             raise
-        node = init_node(parent, components[-1], output)
-        nodes[depth].append((components, node))
+        node = init_node(parent, precursor.name, output)
+        nodes[depth].append((precursor.components, node))
 
     for output in new_outputs:
         writer.write_output(output, dlgen.context)

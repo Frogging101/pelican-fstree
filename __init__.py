@@ -1,1 +1,1 @@
-from .fstree import *
+from .fstree import register
