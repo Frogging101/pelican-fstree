@@ -19,13 +19,11 @@ class FSTree:
     The new Node is added to the parent's list of children, and a reference
     to it is stored in the Output object's "node" template variable.
     """
-    def init_node(self, parent, name, output):
-        node = Node(parent, name, output)
+    def init_node(self, precursor, parent):
+        node = precursor.instantiate(parent)
         node.render_tree = partial(render_tree, node, self.settings)
         node.render_tree_ancestors = partial(render_tree_ancestors, node, self.settings)
-        output.template_vars['node'] = node
-        if parent:
-            parent.add_child(node)
+        node.output.template_vars['node'] = node
         return node
 
     """Generates the tree and links each Output object to a Node.
@@ -51,8 +49,7 @@ class FSTree:
         self.precursors.sort(key=lambda item: len(item.components))
 
         # Create root node for precursor with first (shortest) path
-        root = self.init_node(None, self.precursors[0].name,
-                              self.precursors[0].output)
+        root = self.init_node(self.precursors[0], None)
         # Indexed by depth, nodes[0] contains only ('/', root).
         nodes = [[(self.precursors[0].components, root)]]
         self.precursors.pop(0)
@@ -83,8 +80,8 @@ class FSTree:
                                 _components = precursor.components[:missing+1]
                                 _path = '/'.join(_components[1:])
                                 _output = self.dlgen.generate_dirindex(_path)
-                                _node = self.init_node(_parent, _components[-1],
-                                                       _output)
+                                _precursor = NP(_path, _output)
+                                _node = self.init_node(_precursor, _parent)
                                 nodes[missing].append((_components, _node))
                                 outputs.append(_output)
                                 _parent = _node
@@ -104,7 +101,7 @@ class FSTree:
                     precursor.path)
                 outputs.append(precursor.output)
 
-            node = self.init_node(parent, precursor.name, precursor.output)
+            node = self.init_node(precursor, parent)
             nodes[depth].append((precursor.components, node))
 
     """Store source directory (with trailing slash) in

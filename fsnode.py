@@ -86,3 +86,9 @@ class NodePrecursor:
         self.output = output
         self.components = split_path(path)
         self.name = self.components[-1]
+
+    def instantiate(self, parent):
+        node = Node(parent, self.name, self.output)
+        if parent:
+            parent.add_child(node)
+        return node
