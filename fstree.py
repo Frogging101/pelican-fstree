@@ -15,6 +15,7 @@ from .utils import split_path
 settings = None
 dlgen = None
 writer = None
+precursors = []
 
 def normalize_path(path):
     path = posixize_path(osp.normpath(path))
@@ -39,15 +40,18 @@ def init_node(parent, name, output):
         parent.add_child(node)
     return node
 
-"""Creates a Node for each Output object.
+"""Generates the tree and links each Output object to a Node.
 
 Nodes will be stored in the corresponding Output object's "node"
 template variable by init_node().
 """
 def add_nodes(generators, outputs):
-    precursors = [NP(normalize_path(o.path), o) for o in outputs if
-                  type(o) is HTMLOutput]
+    # Convert outputs to precursors
+    for output in outputs:
+        if type(output) is HTMLOutput:
+            precursors.append(NP(normalize_path(output.path), output))
 
+    # Test for duplicate paths
     paths = [p.path for p in precursors]
     try:
         assert len(paths) == len(set(paths)), "we got dupes"
@@ -67,7 +71,6 @@ def add_nodes(generators, outputs):
     new_outputs = []
     # Create the rest of the nodes
     for precursor in precursors:
-        output = precursor.output
         depth = len(precursor.components)-1
 
         if len(nodes) <= depth:
@@ -106,7 +109,12 @@ def add_nodes(generators, outputs):
         except AssertionError as e:
             e.args += (depth, precursor.components, nodes[depth-1])
             raise
-        node = init_node(parent, precursor.name, output)
+
+        if not precursor.output:
+            precursor.output = dlgen.generate_directory_listing(precursor.path)
+            new_outputs.append(precursor.output)
+
+        node = init_node(parent, precursor.name, precursor.output)
         nodes[depth].append((precursor.components, node))
 
     for output in new_outputs:
