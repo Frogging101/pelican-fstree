@@ -4,7 +4,6 @@ from functools import partial
 from pelican import signals
 from pelican import contents
 from pelican.outputs import HTMLOutput
-from pelican.writers import Writer
 
 from .fsnode import Node, NodePrecursor as NP
 from .render_tree import render_tree, render_tree_ancestors
@@ -13,7 +12,6 @@ from .utils import normalize_path, split_path
 
 settings = None
 dlgen = None
-writer = None
 precursors = []
 
 """Initialize a Node with a parent (optional), name, and Output object.
@@ -58,7 +56,6 @@ def add_nodes(generators, outputs):
                                                  # contains only ('/', root).
     precursors.pop(0)
 
-    new_outputs = []
     # Create the rest of the nodes
     for precursor in precursors:
         depth = len(precursor.components)-1
@@ -87,7 +84,7 @@ def add_nodes(generators, outputs):
                             _output = dlgen.generate_directory_listing(_path)
                             _node = init_node(_parent, _components[-1], _output)
                             nodes[missing].append((_components, _node))
-                            new_outputs.append(_output)
+                            outputs.append(_output)
                             _parent = _node
                         parent = _parent
                         break
@@ -102,13 +99,10 @@ def add_nodes(generators, outputs):
 
         if not precursor.output:
             precursor.output = dlgen.generate_directory_listing(precursor.path)
-            new_outputs.append(precursor.output)
+            outputs.append(precursor.output)
 
         node = init_node(parent, precursor.name, precursor.output)
         nodes[depth].append((precursor.components, node))
-
-    for output in new_outputs:
-        writer.write_output(output, dlgen.context)
 
 """Store source directory (with trailing slash) in
 content.metadata['dir'].
@@ -137,9 +131,8 @@ def add_dir(content):
     content.metadata['dir'] = dirname
 
 def init(pelican):
-    global settings, writer
+    global settings
     settings = pelican.settings
-    writer = Writer(pelican.output_path, settings)
 
 def add_dirlist_generator(pelican):
     return DirListGenerator
