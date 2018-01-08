@@ -10,7 +10,7 @@ class DirListGenerator(Generator):
         self.template = self.get_template(self.settings.get("DIRLIST_TEMPLATE",
                                                             "dirlist"))
 
-    def generate_directory_listing(self, path):
+    def generate_dirindex(self, path):
         path = osp.join(path, 'index.html')
         output = HTMLOutput(path, self.template, self.settings['RELATIVE_URLS'])
         return output

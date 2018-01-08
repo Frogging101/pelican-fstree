@@ -81,7 +81,7 @@ def add_nodes(generators, outputs):
                         for missing in range(level+1, depth):
                             _components = precursor.components[:missing+1]
                             _path = '/'.join(_components[1:])
-                            _output = dlgen.generate_directory_listing(_path)
+                            _output = dlgen.generate_dirindex(_path)
                             _node = init_node(_parent, _components[-1], _output)
                             nodes[missing].append((_components, _node))
                             outputs.append(_output)
@@ -98,7 +98,7 @@ def add_nodes(generators, outputs):
             raise
 
         if not precursor.output:
-            precursor.output = dlgen.generate_directory_listing(precursor.path)
+            precursor.output = dlgen.generate_dirindex(precursor.path)
             outputs.append(precursor.output)
 
         node = init_node(parent, precursor.name, precursor.output)
