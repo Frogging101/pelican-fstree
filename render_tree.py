@@ -110,8 +110,12 @@ def _render_tree(node, settings, descendants, me, root):
     out = '<div class="fsnode">'
     if node is not root:
         out += indent(node, root)
-    out += '<a href="{}{}">{}</a>'.format(settings.get('SITEURL', ''),
-                                          node.path, node.name)
+
+    extlink = ''
+    if hasattr(node, 'link_dest'):
+        extlink = 'class="extlink"'
+    out += '<a href="{}" {}>{}</a>'.format(
+        node.get_url(settings.get('SITEURL', '')), extlink, node.name)
     out += '</div>\n'
     if descendants:
         for child in node.children:

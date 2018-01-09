@@ -2,23 +2,30 @@ from pelican import signals
 
 from .dirlist import DirListGenerator
 from .fstree import FSTree
+from . import readlink
+from .readlink import LinkReader, LinkGenerator
 
 class FSTreePlugin:
     def __init__(self):
         self.fstree = None
         self.settings = None
         self.dlgen = None
+        self.precursors = []
+        readlink.precursors = self.precursors
 
     def try_init_fstree(self):
         if self.fstree is None:
             if self.settings is not None and self.dlgen is not None:
-                self.fstree = FSTree(self.settings, self.dlgen)
+                self.fstree = FSTree(self.settings, self.dlgen, self.precursors)
 
     def init(self, pelican):
         self.settings = pelican.settings
 
     def add_dirlist_generator(self, pelican):
         return DirListGenerator
+
+    def add_link_generator(self, pelican):
+        return LinkGenerator
 
     def get_dirlist_generator(self, generator):
         if isinstance(generator, DirListGenerator):
@@ -34,9 +41,14 @@ class FSTreePlugin:
         assert self.fstree
         self.fstree.add_dir(content)
 
+    def add_link_reader(self, readers):
+        readers.reader_classes['lnk'] = LinkReader
+
     def register(self):
         signals.initialized.connect(self.init)
+        signals.readers_init.connect(self.add_link_reader)
         signals.get_generators.connect(self.add_dirlist_generator)
+        signals.get_generators.connect(self.add_link_generator)
         signals.generator_init.connect(self.get_dirlist_generator)
         signals.all_generators_finalized.connect(self.add_nodes)
         signals.content_object_init.connect(self.add_dir)

@@ -5,14 +5,17 @@ from pelican import contents
 from pelican.outputs import HTMLOutput
 
 from .fsnode import Node, NodePrecursor as NP
+from . import readlink
 from .render_tree import render_tree, render_tree_ancestors
 from .utils import normalize_path, split_path
 
 class FSTree:
-    def __init__(self, settings, dlgen):
+    def __init__(self, settings, dlgen, precursors=None):
         self.settings = settings
         self.dlgen = dlgen
-        self.precursors = []
+        self.precursors = precursors
+        if self.precursors is None:
+            self.precursors = []
 
     """Initialize a Node with a parent (optional), name, and Output object.
 
@@ -23,7 +26,8 @@ class FSTree:
         node = precursor.instantiate(parent)
         node.render_tree = partial(render_tree, node, self.settings)
         node.render_tree_ancestors = partial(render_tree_ancestors, node, self.settings)
-        node.output.template_vars['node'] = node
+        if node.output:
+            node.output.template_vars['node'] = node
         return node
 
     """Generates the tree and links each Output object to a Node.
@@ -96,9 +100,8 @@ class FSTree:
                 e.args += (depth, precursor.components, nodes[depth-1])
                 raise
 
-            if not precursor.output:
-                precursor.output = self.dlgen.generate_dirindex(
-                    precursor.path)
+            if not precursor.output and not hasattr(precursor, 'link_dest'):
+                precursor.output = self.dlgen.generate_dirindex(precursor.path)
                 outputs.append(precursor.output)
 
             node = self.init_node(precursor, parent)

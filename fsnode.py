@@ -1,8 +1,11 @@
 import copy
 from operator import attrgetter
 import posixpath as osp
+import re
 
 from .utils import split_path
+
+URLpat = re.compile(r"^[^:]+://")
 
 class Node:
     def __init__(self, parent, name, output=None):
@@ -55,6 +58,9 @@ class Node:
     def ts(self):
         return "timestamp"
 
+    def get_url(self, siteurl):
+        return siteurl+self.path
+
     def get_node_at(self, path):
         if self.path == path:
             return self
@@ -80,6 +86,17 @@ class Node:
 
         return new
 
+class LinkNode(Node):
+    def __init__(self, parent, name, link_dest):
+        self.link_dest = link_dest
+        super(LinkNode, self).__init__(parent, name)
+
+    def get_url(self, siteurl):
+        if URLpat.match(self.link_dest):
+            return self.link_dest
+        else:
+            return siteurl+self.link_dest
+
 class NodePrecursor:
     def __init__(self, path, output=None):
         self.path = path
@@ -89,6 +106,17 @@ class NodePrecursor:
 
     def instantiate(self, parent):
         node = Node(parent, self.name, self.output)
+        if parent:
+            parent.add_child(node)
+        return node
+
+class LinkNodePrecursor(NodePrecursor):
+    def __init__(self, path, link_dest):
+        self.link_dest = link_dest
+        super(LinkNodePrecursor, self).__init__(path)
+
+    def instantiate(self, parent):
+        node = LinkNode(parent, self.name, self.link_dest)
         if parent:
             parent.add_child(node)
         return node
