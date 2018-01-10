@@ -91,6 +91,10 @@ class LinkNode(Node):
         self.link_dest = link_dest
         super(LinkNode, self).__init__(parent, name)
 
+    @property
+    def is_extlink(self):
+        return URLpat.match(self.link_dest) is not None
+
     def get_url(self, siteurl):
         if URLpat.match(self.link_dest):
             return self.link_dest

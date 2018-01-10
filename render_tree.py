@@ -111,15 +111,24 @@ def _render_tree(node, settings, descendants, me, root):
     if node is not root:
         out += indent(node, root)
 
-    extlink = ''
+    append_class = ""
+    link_classes = []
     if hasattr(node, 'link_dest'):
-        extlink = 'class="extlink"'
+        link_classes.append("link")
+        if node.is_extlink:
+            link_classes.append("extlink")
+        else:
+            link_classes.append("intlink")
+        append_class = 'class="{}"'.format(' '.join(link_classes))
+
     out += '<a href="{}" {}>{}</a>'.format(
-        node.get_url(settings.get('SITEURL', '')), extlink, node.name)
+        node.get_url(settings.get('SITEURL', '')), append_class, node.name)
     out += '</div>\n'
+
     if descendants:
         for child in node.children:
             out += _render_tree(child, settings, descendants-1, me, root)
+
     return out
 
 def render_tree(node, settings, descendants=-1, me=None, matchpaths=None,
