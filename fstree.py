@@ -5,6 +5,7 @@ from pelican import contents
 from pelican.outputs import HTMLOutput
 
 from .fsnode import Node, NodePrecursor as NP
+from .fsnode import LinkNodePrecursor
 from . import readlink
 from .render_tree import render_tree, render_tree_ancestors
 from .utils import normalize_path, split_path
@@ -131,3 +132,17 @@ class FSTree:
             dirname += '/'
 
         content.metadata['dir'] = dirname
+
+def gen_archive_links(dates, settings, precursors):
+    period_path = {
+        'year': settings.get("FSTREE_YEAR_ARCHIVE_PATH"),
+        'month': settings.get("FSTREE_MONTH_ARCHIVE_PATH"),
+        'day': settings.get("FSTREE_DAY_ARCHIVE_PATH"),
+    }
+
+    for period in period_path:
+        path_fmt = period_path[period]
+        if path_fmt:
+            for article in dates:
+                path = normalize_path(path_fmt.format(**article.url_format))
+                precursors.append(LinkNodePrecursor(path, article.url))
